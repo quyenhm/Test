@@ -21,8 +21,13 @@ node {
                     'Integration Tests': {
                         echo 'Running integration tests...'
 
-                        withCredentials([usernamePassword(credentialsId: 'SQL', passwordVariable: 'SQL_PWD', usernameVariable: 'SQL_USER')]) {
-                            powershell '.\\ii.ps1 -EditConn -Username \'${env.SQL_USER}\' -Password \'${env.SQL_PWD}\''
+                        withCredentials(
+                            [usernamePassword(
+                                credentialsId: 'SQL',
+                                passwordVariable: 'SQL_PWD',
+                                usernameVariable: 'SQL_USER')]
+                        ) {
+                            powershell '${env.WORKSPACE}.\\ii.ps1 -EditConn -Username \'${env.SQL_USER}\' -Password \'${env.SQL_PWD}\''
                         }
                     }
                 )
