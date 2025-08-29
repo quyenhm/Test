@@ -5,7 +5,6 @@ properties([
 ])
 
 node {
-    def APP_ENV = "staging"
     def VERSION = "1.0.${env.BUILD_NUMBER}"
 
     try {
@@ -16,11 +15,15 @@ node {
         stage('Test') {
             if (params.RUN_TESTS) {
                 parallel(
-                    "Unit Tests": {
-                        echo "Running unit tests..."
+                    'Unit Tests': {
+                        echo 'Running unit tests...'
                     },
-                    "Integration Tests": {
-                        echo "Running integration tests..."
+                    'Integration Tests': {
+                        echo 'Running integration tests...'
+
+                        withCredentials([usernamePassword(credentialsId: 'SQL', passwordVariable: 'SQL_PWD', usernameVariable: 'SQL_USER')]) {
+                            powershell script: ".\ii.ps1 -EditConn -Username '${env.SQL_USER}' -Password '${env.SQL_PWD}'"
+                        }
                     }
                 )
             } else {
