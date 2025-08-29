@@ -6,9 +6,9 @@ param(
 
 if ($EditConn) {
     Write-Host "Configuration updated successfully. $Username - $Password"
-    else {
-        Write-Host "No changes made to configuration."
-    }
+}
+else {
+    Write-Host "No changes made to configuration."
 }
 
 Write-Host "Done!"

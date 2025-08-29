@@ -1,15 +1,29 @@
+/* groovylint-disable-next-line CompileStatic */
 properties([
     parameters([
         booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run tests before deploy?')
     ])
 ])
 
+runIntegrationTests {
+    withCredentials(
+        [usernamePassword(
+            credentialsId: 'SQL',
+            passwordVariable: 'SQL_PWD',
+            usernameVariable: 'SQL_USER')]
+    ) {
+        pwsh """
+            & "${env.WORKSPACE}\\ii.ps1" -EditConn -Username "${env.SQL_USER}" -Password "${env.SQL_PWD}"
+        """
+    }
+}
+
 node {
-    def VERSION = "1.0.${env.BUILD_NUMBER}"
+    version = "1.0.${env.BUILD_NUMBER}"
 
     try {
         stage('Build') {
-            echo "Building app version ${VERSION}"
+            echo "Building app version ${version}"
         }
 
         stage('Test') {
@@ -20,19 +34,11 @@ node {
                     },
                     'Integration Tests': {
                         echo 'Running integration tests...'
-
-                        withCredentials(
-                            [usernamePassword(
-                                credentialsId: 'SQL',
-                                passwordVariable: 'SQL_PWD',
-                                usernameVariable: 'SQL_USER')]
-                        ) {
-                            powershell '${env.WORKSPACE}.\\ii.ps1 -EditConn -Username \'${env.SQL_USER}\' -Password \'${env.SQL_PWD}\''
-                        }
+                        runIntegrationTests()
                     }
                 )
             } else {
-                echo "Skipping tests"
+                echo 'Skipping tests'
             }
         }
 
@@ -40,14 +46,14 @@ node {
             echo "Deploying version ${VERSION} to ${APP_ENV}"
         }
 
-        echo "Pipeline completed successfully ✅"
+        echo 'Pipeline completed successfully ✅'
     }
     catch (err) {
         echo "Pipeline failed ❌: ${err}"
-        currentBuild.result = "FAILURE"
+        currentBuild.result = 'FAILURE'
         throw err
     }
     finally {
-        echo "Cleaning up workspace..."
+        echo 'Cleaning up workspace...'
     }
 }
