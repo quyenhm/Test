@@ -1,3 +1,9 @@
+properties([
+    parameters([
+        booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run tests before deploy?')
+    ])
+])
+
 node {
     def APP_ENV = "staging"
     def VERSION = "1.0.${env.BUILD_NUMBER}"
