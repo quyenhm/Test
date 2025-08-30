@@ -1,37 +1,58 @@
+pipeline {
+    agent any
 
-node {
-    try {
+    environment {
+        SqlServer = credentials('SQL')
+    }
+
+    parameters {
+        string(name: 'NOTIFY_EMAIL', description: 'Email to notify')
+    }
+
+    stages {
         stage('Build') {
-            echo "Building app version ${version}"
-        }
-
-        stage('Test') {
-            echo 'Running integration tests...'
-
-            withCredentials(
-                [usernamePassword(
-                    credentialsId: 'SQL',
-                    usernameVariable: 'USR',
-                    passwordVariable: 'PSW')]
-            ) {
-                pwsh '''
-                    & "$env:WORKSPACE\\ii.ps1" -EditConn -Username $env:USR -Password $env:PSW
-                '''
+            steps {
+                echo 'Building app'
+                pwsh '& ".\\ii.ps1" -Build'
             }
         }
 
-        stage('Deploy') {
-            echo "Deploying version ${version}"
+        stage('Test') {
+            steps {
+                echo 'Running integration tests...'
+                pwsh '& ".\\ii.ps1" -EditConn -Username $env:SqlServer_USR -Password $env:SqlServer_PSW'
+                pwsh '& ".\\ii.ps1" -Test'
+
+                mstest(testResultsFile: 'Tests/TestResults/**/*.trx', failOnError: true)
+            }
         }
 
-        echo 'Pipeline completed successfully ✅'
+        stage('Publish') {
+            when {
+                branch comparator: 'EQUALS', pattern: 'main'
+            }
+            steps {
+                echo 'Publishing the CLI...'
+                pwsh '& ".\\ii.ps1" -Publish'
+
+                archiveArtifacts(artifacts: 'Delivery.Cli\\bin\\ifsintall_v*.zip', fingerprint: true)
+            }
+        }
     }
-    catch (err) {
-        echo "Pipeline failed ❌: ${err}"
-        currentBuild.result = 'FAILURE'
-        throw err
-    }
-    finally {
-        echo 'Cleaning up workspace...'
+
+    post {
+        success {
+            echo 'Pipeline completed successfully ✅'
+        }
+        failure {
+            echo 'Pipeline failed ❌'
+            mail to: "${params.NOTIFY_EMAIL}",
+                subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} ❌",
+                body: "Check log: ${env.BUILD_URL}"
+        }
+        always {
+            echo 'Cleaning up workspace...'
+            pwsh '& ".\\ii.ps1" -RemoveBin -RemoveTestUser -ResetConn'
+        }
     }
 }
