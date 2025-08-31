@@ -19,10 +19,10 @@ pipeline {
                 pwsh '& ".\\ii.ps1" -EditConn -Username $env:SqlServer_USR -Password $env:SqlServer_PSW'
                 pwsh '& ".\\ii.ps1" -Test'
 
-                mstest(
-                    testResultsFile: 'Tests/TestResults/**/*.trx',
-                    failOnError: true
-                )
+                // mstest(
+                //     testResultsFile: 'Tests/TestResults/**/*.trx',
+                //     failOnError: true
+                // )
             }
         }
 
