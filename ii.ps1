@@ -23,7 +23,7 @@ if ($Build) {
 
 if ($Publish) {
     Write-Host "Publishing the project..."
-    Write-Host "v1.0.0"
+    Write-Host "v2.0.0"
     Write-Host "Project published successfully."
 }
 
