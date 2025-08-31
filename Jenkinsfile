@@ -23,7 +23,10 @@ pipeline {
                 pwsh '& ".\\ii.ps1" -EditConn -Username $env:SqlServer_USR -Password $env:SqlServer_PSW'
                 pwsh '& ".\\ii.ps1" -Test'
 
-                mstest(testResultsFile: 'Tests/TestResults/**/*.trx', failOnError: true)
+                mstest(
+                    testResultsFile: 'Tests/TestResults/**/*.trx',
+                    failOnError: true
+                )
             }
         }
 
@@ -35,7 +38,12 @@ pipeline {
                 echo 'Publishing the CLI...'
                 pwsh '& ".\\ii.ps1" -Publish'
 
-                archiveArtifacts(artifacts: 'Delivery.Cli\\bin\\ifsintall_v*.zip', fingerprint: true)
+                archiveArtifacts(
+                    artifacts: 'Delivery.Cli\\bin\\ifsintall_v*.zip',
+                    fingerprint: true,
+                    onlyIfSuccessful: true,
+                    allowEmptyArchive: true
+                )
             }
         }
     }
@@ -46,9 +54,11 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed ❌'
-            mail to: "${params.NOTIFY_EMAIL}",
+            mail(
+                to: "${params.NOTIFY_EMAIL}",
                 subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} ❌",
                 body: "Check log: ${env.BUILD_URL}"
+            )
         }
         always {
             echo 'Cleaning up workspace...'
