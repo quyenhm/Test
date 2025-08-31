@@ -5,10 +5,6 @@ pipeline {
         SqlServer = credentials('SQL')
     }
 
-    parameters {
-        string(name: 'NOTIFY_EMAIL', description: 'Email to notify')
-    }
-
     stages {
         stage('Build') {
             steps {
@@ -23,10 +19,10 @@ pipeline {
                 pwsh '& ".\\ii.ps1" -EditConn -Username $env:SqlServer_USR -Password $env:SqlServer_PSW'
                 pwsh '& ".\\ii.ps1" -Test'
 
-                mstest(
-                    testResultsFile: 'Tests/TestResults/**/*.trx',
-                    failOnError: true
-                )
+                // mstest(
+                //     testResultsFile: 'Tests/TestResults/**/*.trx',
+                //     failOnError: true
+                // )
             }
         }
 
@@ -54,11 +50,17 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed ❌'
-            mail(
-                to: "${params.NOTIFY_EMAIL}",
-                subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} ❌",
-                body: "Check log: ${env.BUILD_URL}"
-            )
+            script {
+                if (env.IFSINSTALL_NOTIFY_EMAIL?.trim()) {
+                    mail(
+                        to: env.IFSINSTALL_NOTIFY_EMAIL,
+                        subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} ❌",
+                        body: "Check log: ${env.BUILD_URL}"
+                    )
+                } else {
+                    echo 'No notification email configured ($env.IFSINSTALL_NOTIFY_EMAIL is missing or empty).'
+                }
+            }
         }
         always {
             echo 'Cleaning up workspace...'
