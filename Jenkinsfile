@@ -15,11 +15,9 @@ pipeline {
                     env.STARTED_AT = new Date(currentBuild.startTimeInMillis ?: System.currentTimeMillis()).toString()
                     env.FORMATTED_DATE = new Date().format("yyyy.MM.dd_HH.mm")
                     env.TEST_OUTPUT = "Tests/TestResults/${env.FORMATTED_DATE}"
-                    env.NAME = env.JOB_NAME.replace('%252F', '/')
+                    env.NAME = env.JOB_NAME.replace('%2F', '/')
                 }
 
-                echo '0: "$env:NAME"'
-                echo '1: $env:NAME'
                 echo "2: $env.NAME"
                 echo "3: ${env.NAME}"
                 echo """
