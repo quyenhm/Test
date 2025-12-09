@@ -37,7 +37,7 @@ pipeline {
                         echo 'Running unit tests...'
                         pwsh '& ./ii.ps1 -Test -ExitCode ' + params['Exit Code for Tests']
 
-                        if (param['Test Pwsh throw']) {
+                        if (params['Test Pwsh throw']) {
                             echo 'Running Pwsh throw test...'
                             pwsh '& ./ii.ps1 -Throw'
                         }
