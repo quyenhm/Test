@@ -21,9 +21,9 @@ pipeline {
 
                 echo "1: $env.TITLE"
                 echo "2: $env.NAME"
-                echo "3: ${env.NAME}"
+                echo "3: ${env.BUILD_DISPLAY_NAME}"
                 echo """
-                4: $env.NAME
+                4: $currentBuild.fullDisplayName
                 """
 
             }
