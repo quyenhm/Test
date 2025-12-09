@@ -1,8 +1,10 @@
 pipeline {
     agent any
 
-    environment {
-        SqlServer = credentials('SQL')
+    parameters {
+        booleanParam defaultValue: false, name: 'Run Tests in Parallel?'
+        booleanParam defaultValue: false, name: 'Test Pwsh throw'
+        string defaultValue: '0', name: 'Exit Code for Tests'
     }
 
     stages {
@@ -15,14 +17,32 @@ pipeline {
 
         stage('Test') {
             steps {
-                echo 'Running integration tests...'
-                pwsh '& ".\\ii.ps1" -EditConn -Username $env:SqlServer_USR -Password $env:SqlServer_PSW'
-                pwsh '& ".\\ii.ps1" -Test'
+                script {
+                    if (params['Run Tests in Parallel?']) {
+                        echo 'Running tests in parallel...'
+                        def projects = ['CORE', 'AML', 'SAFE', 'BW', 'IB', 'DIGI', 'SYS', 'CLI', 'LIC']
+                        def parallelStages = [:]
 
-                // mstest(
-                //     testResultsFile: 'Tests/TestResults/**/*.trx',
-                //     failOnError: true
-                // )
+                        projects.each { proj ->
+                            parallelStages[proj] = {
+                                pwsh '& "./ii.ps1" -Test -Projects ' + proj
+                            }
+                        }
+
+                        parallel(parallelStages)
+                    } else {
+                        echo 'Running tests sequentially...'
+                        echo 'Running integration tests...'
+                        pwsh '& ./ii.ps1 -Test'
+                        echo 'Running unit tests...'
+                        pwsh '& ./ii.ps1 -Test -ExitCode ' + params['Exit Code for Tests']
+
+                        if (param['Test Pwsh throw']) {
+                            echo 'Running Pwsh throw test...'
+                            pwsh '& ./ii.ps1 -Throw'
+                        }
+                    }
+                }
             }
         }
 
@@ -64,7 +84,6 @@ pipeline {
         }
         always {
             echo 'Cleaning up workspace...'
-            pwsh '& ".\\ii.ps1" -RemoveBin -RemoveTestUser -ResetConn'
         }
     }
 }
