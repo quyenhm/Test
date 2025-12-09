@@ -18,6 +18,7 @@ pipeline {
                     env.NAME = env.JOB_NAME.replace('%252F', '/')
                 }
 
+                echo '0: "$env:NAME"'
                 echo '1: $env:NAME'
                 echo "2: $env.NAME"
                 echo "3: ${env.NAME}"
