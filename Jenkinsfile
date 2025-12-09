@@ -16,8 +16,10 @@ pipeline {
                     env.FORMATTED_DATE = new Date().format("yyyy.MM.dd_HH.mm")
                     env.TEST_OUTPUT = "Tests/TestResults/${env.FORMATTED_DATE}"
                     env.NAME = env.JOB_NAME.replace('%2F', '/')
+                    env.JOB_NAME = env.JOB_NAME.replace('%2F', '/')
                 }
 
+                echo "1: $env.JOB_NAME"
                 echo "2: $env.NAME"
                 echo "3: ${env.NAME}"
                 echo """
