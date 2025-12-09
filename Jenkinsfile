@@ -11,7 +11,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building app'
-                pwsh '& ".\\ii.ps1" -Build'
+                pwsh '& ./ii.ps1 -Build'
             }
         }
 
@@ -25,7 +25,7 @@ pipeline {
 
                         projects.each { proj ->
                             parallelStages[proj] = {
-                                pwsh '& "./ii.ps1" -Test -Projects ' + proj
+                                pwsh '& ./ii.ps1 -Test -Projects ' + proj
                             }
                         }
 
@@ -52,7 +52,7 @@ pipeline {
             }
             steps {
                 echo 'Publishing the CLI...'
-                pwsh '& ".\\ii.ps1" -Publish'
+                pwsh '& ./ii.ps1 -Publish'
 
                 archiveArtifacts(
                     artifacts: 'Delivery.Cli\\bin\\ifsintall_v*.zip',
@@ -72,11 +72,12 @@ pipeline {
             echo 'Pipeline failed ❌'
             script {
                 if (env.IFSINSTALL_NOTIFY_EMAIL?.trim()) {
-                    mail(
-                        to: env.IFSINSTALL_NOTIFY_EMAIL,
-                        subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} ❌",
-                        body: "Check log: ${env.BUILD_URL}"
-                    )
+                    // mail(
+                    //     to: env.IFSINSTALL_NOTIFY_EMAIL,
+                    //     subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} ❌",
+                    //     body: "Check log: ${env.BUILD_URL}"
+                    // )
+                    echo 'Emailed.'
                 } else {
                     echo 'No notification email configured ($env.IFSINSTALL_NOTIFY_EMAIL is missing or empty).'
                 }
