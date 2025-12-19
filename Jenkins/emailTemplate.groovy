@@ -42,11 +42,11 @@ def build(Map ctx, Map opt = [:]) {
     """.stripIndent().trim()
 }
 
-def hello(name) {
+def hello(name, age) {
     return "Hello ${name}"
 }
 
-def hello2(name) {
+def hello2(name, age) {
     return "Hello " + name
 }
 
