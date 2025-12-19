@@ -54,7 +54,7 @@ pipeline {
                     } else {
                         echo 'Running tests sequentially...'
                         echo 'Running integration tests...'
-                        pwsh '& ./ii.ps1 -Test'
+                        pwsh '& ./ii.ps1 -Test' + env.FORMATTED_DATE
                         echo 'Running unit tests...'
                         pwsh '& ./ii.ps1 -Test -ExitCode ' + params['Exit Code for Tests']
 
