@@ -1,7 +1,7 @@
 def emailTpl
 
 def ctx = [
-    email : null,
+    email: null,
     jobName: null,
     testOutput: null,
     startTime: null,
@@ -30,6 +30,11 @@ pipeline {
             steps {
                 script {
                     emailTpl = load 'Jenkins/emailTemplate.groovy'
+
+                    echo emailTpl.hello("123")
+                    echo emailTpl.hello2("456")
+
+
                     def dateFormat = new Date().format("yyyy.MM.dd_HH.mm")
 
                     ctx.email = env.IFSINSTALL_NOTIFY_EMAIL?.trim()
