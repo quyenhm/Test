@@ -1,5 +1,5 @@
 
-def sendEmail(Map data [:]) {
+def sendEmail(Map data = [:]) {
     def showTests = data.get('showTests', true)
 
   if (data.email) {
