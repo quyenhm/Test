@@ -109,11 +109,11 @@ pipeline {
                             subject: "⚠️ TEST FAILED: ${currentBuild.fullDisplayName}",
                             mimeType: 'text/html',
                             body: emailTpl.build(
-                                ctx,
-                                "⚠️ TEST UNSTABLE",
-                                "UNSTABLE",
-                                "#f39c12",
-                                "Some tests are unstable or flaky. Please review the test results and take appropriate action."
+                                ctx: ctx,
+                                title: "⚠️ TEST UNSTABLE",
+                                result: "UNSTABLE",
+                                color: "#f39c12",
+                                message: "Some tests are unstable or flaky. Please review the test results and take appropriate action."
                             )
                         )
                     }
@@ -153,11 +153,11 @@ pipeline {
                         subject: "✅ BACK TO STABLE: ${currentBuild.fullDisplayName}",
                         mimeType: 'text/html',
                         body: emailTpl.build(
-                            ctx,
-                            "✅ TEST PASSED",
-                            "SUCCESS",
-                            "#27ae60",
-                            "The issues causing previous test failures have been resolved. The build is now stable."
+                            ctx: ctx,
+                            title: "✅ TEST PASSED",
+                            result: "SUCCESS",
+                            color: "#27ae60",
+                            message: "The issues causing previous test failures have been resolved. The build is now stable."
                         )
                     )
                 }
@@ -175,12 +175,12 @@ pipeline {
                         subject: "❌ BUILD FAILED: ${currentBuild.fullDisplayName} - Immediate Action Required",
                         mimeType: 'text/html',
                         body: emailTpl.build(
-                            ctx,
-                            "❌ BUILD FAILURE",
-                            "FAILED",
-                            "#c0392b",
-                            "Please investigate the failure as soon as possible to maintain the integrity of the build process.",
-                            false
+                            ctx: ctx,
+                            title: "❌ BUILD FAILURE",
+                            result: "FAILED",
+                            color: "#c0392b",
+                            message: "Please investigate the failure as soon as possible to maintain the integrity of the build process.",
+                            showTests: false
                         )
                     )
                 } else {
