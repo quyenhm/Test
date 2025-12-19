@@ -29,15 +29,7 @@ pipeline {
         stage('Init') {
             steps {
                 script {
-                    emailTpl = load 'Jenkins/emailTemplate.groovy'
-
-                    def i = [
-                        name: "A", age: 123
-                    ]
-
-                    echo emailTpl.hello(i)
-                    echo emailTpl.hello2(i)
-
+                    emailTpl = load 'Jenkins/email.groovy'
 
                     def dateFormat = new Date().format("yyyy.MM.dd_HH.mm")
 
@@ -112,19 +104,14 @@ pipeline {
                     def result = currentBuild.result ?: 'SUCCESS'
                     echo "Build result after mstest: ${result}"
 
-                    if (ctx.email && result == 'UNSTABLE') {
-                        mail(
-                            to: ctx.email,
-                            subject: "⚠️ TEST FAILED: ${currentBuild.fullDisplayName}",
-                            mimeType: 'text/html',
-                            body: emailTpl.build(
-                                ctx,
-                                title: "⚠️ TEST UNSTABLE",
-                                result: "UNSTABLE",
-                                color: "#f39c12",
-                                message: "Some tests are unstable or flaky. Please review the test results and take appropriate action."
-                            )
-                        )
+                    if (result == 'UNSTABLE') {
+                        emailTpl.sendEmail([
+                            email: ctx.email,
+                            title: "⚠️ TEST UNSTABLE",
+                            jobName: ctx.jobName,
+                            startTime: ctx.startTime,
+                            message: "Some tests are unstable or flaky. Please review the test results and take appropriate action."
+                        ])
                     }
                 }
             }
@@ -156,19 +143,14 @@ pipeline {
                 def prevResult = currentBuild.previousBuild?.result
                 def currResult = currentBuild.currentResult
 
-                if (ctx.email &&prevResult != 'SUCCESS' && currResult == 'SUCCESS') {
-                    mail(
-                        to: ctx.email,
-                        subject: "✅ BACK TO STABLE: ${currentBuild.fullDisplayName}",
-                        mimeType: 'text/html',
-                        body: emailTpl.build(
-                            ctx,
-                            title: "✅ TEST PASSED",
-                            result: "SUCCESS",
-                            color: "#27ae60",
-                            message: "The issues causing previous test failures have been resolved. The build is now stable."
-                        )
-                    )
+                if (prevResult != 'SUCCESS' && currResult == 'SUCCESS') {
+                    emailTpl.sendEmail([
+                        email: ctx.email,
+                        title: "✅ TEST PASSED",
+                        jobName: ctx.jobName,
+                        startTime: ctx.startTime,
+                        message: "The issues causing previous test failures have been resolved. The build is now stable."
+                    ])
                 }
             }
 
@@ -178,23 +160,15 @@ pipeline {
         failure {
             echo 'Pipeline failed ❌'
             script {
-                if (ctx.email) {
-                    mail(
-                        to: ctx.email,
-                        subject: "❌ BUILD FAILED: ${currentBuild.fullDisplayName} - Immediate Action Required",
-                        mimeType: 'text/html',
-                        body: emailTpl.build(
-                            ctx,
-                            title: "❌ BUILD FAILURE",
-                            result: "FAILED",
-                            color: "#c0392b",
-                            message: "Please investigate the failure as soon as possible to maintain the integrity of the build process.",
-                            showTests: false
-                        )
-                    )
-                } else {
-                    echo 'No notification email configured ($ctx.email is missing or empty).'
-                }
+                emailTpl.sendEmail([
+                    email: ctx.email,
+                    title: "❌ BUILD FAILURE",
+                    jobName: ctx.jobName,
+                    startTime: ctx.startTime,
+                    message: "Please investigate the failure as soon as possible to maintain the integrity of the build process.",
+                    showTests: false,
+                    color: "#c0392b"
+                ])
             }
         }
         always {
