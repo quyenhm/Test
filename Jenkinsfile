@@ -5,6 +5,45 @@ def ctx = [
     startTime: null,
 ]
 
+def buildEmailBody(Map ctx, String title, String result, String color, String message, boolean showTests = true) {
+    return """
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #333;">
+
+  <h2 style="color:${color}; margin-bottom:8px;">${title}</h2>
+
+  <table cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
+    <tr><td><b>Started</b></td><td>${ctx.startTime}</td></tr>
+    <tr><td><b>Duration</b></td><td>${currentBuild.durationString}</td></tr>
+    <tr><td><b>Result</b></td><td><b style="color:${color}">${result}</b></td></tr>
+  </table>
+
+  <h3>Summary</h3>
+  <ul>
+    <li><b>Job:</b> ${ctx.jobName}</li>
+    <li><b>Build:</b> #${env.BUILD_NUMBER}</li>
+  </ul>
+
+  <h3>Quick Links</h3>
+  <ul>
+    <li><a href="${env.BUILD_URL}">Build</a></li>
+    <li><a href="${env.BUILD_URL}console">Console</a></li>
+    ${showTests ? "<li><a href='${env.BUILD_URL}testReport'>Tests</a></li>" : ""}
+  </ul>
+
+  <p>${message}</p>
+
+  <p style="font-size:12px; color:#777;">
+    Regards,<br/>Jenkins CI
+  </p>
+
+</body>
+</html>
+""".stripIndent().trim()
+}
+
+
 pipeline {
     agent any
 
@@ -104,29 +143,13 @@ pipeline {
                         mail(
                             to: ctx.email,
                             subject: "⚠️ TEST FAILED: ${currentBuild.fullDisplayName}",
-                            body: """
-                            ────────────────────────────────────────
-                            TEST FAILURE
-
-                            Started: ${ctx.startTime}
-                            Duration: ${currentBuild.durationString}
-                            ────────────────────────────────────────
-
-                            Summary
-                               - Job: ${ctx.jobName}
-                               - Build: #${env.BUILD_NUMBER}
-                               - Result: UNSTABLE
-
-                            Quick Links
-                               - Build: ${env.BUILD_URL}
-                               - Console: ${env.BUILD_URL}console
-                               - Tests: ${env.BUILD_URL}testReport
-
-                            Please review the test failures and take corrective action.
-
-                            Regards,
-                            Jenkins CI
-                            """.stripIndent().trim()
+                            body: buildEmailBody(
+                                ctx,
+                                "⚠️ TEST UNSTABLE",
+                                "UNSTABLE",
+                                "#f39c12",
+                                "Some tests are unstable or flaky. Please review the test results and take appropriate action."
+                            )
                         )
                     }
                 }
@@ -163,29 +186,13 @@ pipeline {
                     mail(
                         to: ctx.email,
                         subject: "✅ BACK TO STABLE: ${currentBuild.fullDisplayName}",
-                        body: """
-                        ────────────────────────────────────────
-                        TEST PASSED
-
-                        Started: ${ctx.startTime}
-                        Duration: ${currentBuild.durationString}
-                        ────────────────────────────────────────
-
-                        Summary
-                            - Job: ${ctx.jobName}
-                            - Build: #${env.BUILD_NUMBER}
-                            - Result: SUCCESS
-
-                        Quick Links
-                            - Build: ${env.BUILD_URL}
-                            - Console: ${env.BUILD_URL}console
-                            - Tests: ${env.BUILD_URL}testReport
-
-                        The issues causing previous test failures have been resolved. The build is now stable.
-
-                        Regards,
-                        Jenkins CI
-                        """.stripIndent().trim()
+                        body: buildEmailBody(
+                            ctx,
+                            "✅ TEST PASSED",
+                            "SUCCESS",
+                            "#27ae60",
+                            "The issues causing previous test failures have been resolved. The build is now stable."
+                        )
                     )
                 }
             }
@@ -200,28 +207,14 @@ pipeline {
                     mail(
                         to: ctx.email,
                         subject: "❌ BUILD FAILED: ${currentBuild.fullDisplayName} - Immediate Action Required",
-                        body: """
-                        ────────────────────────────────────────
-                        BUILD FAILURE
-
-                        Started: ${ctx.startTime}
-                        Duration: ${currentBuild.durationString}
-                        ────────────────────────────────────────
-
-                        Summary
-                           - Job: ${ctx.jobName}
-                           - Build: #${env.BUILD_NUMBER}
-                           - Result: FAILED
-
-                        Quick Links
-                           - Build: ${env.BUILD_URL}
-                           - Console: ${env.BUILD_URL}console
-
-                        Please investigate the failure as soon as possible to maintain the integrity of the build process.
-
-                        Regards,
-                        Jenkins CI
-                        """.stripIndent().trim()
+                        body: buildEmailBody(
+                            ctx,
+                            "❌ BUILD FAILURE",
+                            "FAILED",
+                            "#c0392b",
+                            "Please investigate the failure as soon as possible to maintain the integrity of the build process.",
+                            false
+                        )
                     )
                 } else {
                     echo 'No notification email configured ($ctx.email is missing or empty).'
