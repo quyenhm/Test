@@ -31,8 +31,8 @@ pipeline {
                 script {
                     emailTpl = load 'Jenkins/emailTemplate.groovy'
 
-                    echo emailTpl.hello("A", 123)
-                    echo emailTpl.hello2("B", 456)
+                    echo emailTpl.hello(name: "A", age: 123)
+                    echo emailTpl.hello2(name: "B", age: 456)
 
 
                     def dateFormat = new Date().format("yyyy.MM.dd_HH.mm")
