@@ -1,5 +1,20 @@
+def ctx = [
+    email : null,
+    jobName: null,
+    testOutput: null,
+    startTime: null,
+]
+
 pipeline {
     agent any
+
+    environment {
+        SqlServer = credentials('SQL_SERVER')
+    }
+
+    options {
+        disableConcurrentBuilds()
+    }
 
     parameters {
         booleanParam defaultValue: false, name: 'Run Tests in Parallel?'
@@ -12,20 +27,20 @@ pipeline {
         stage('Init') {
             steps {
                 script {
-                    env.STARTED_AT = new Date(currentBuild.startTimeInMillis ?: System.currentTimeMillis()).toString()
-                    env.FORMATTED_DATE = new Date().format("yyyy.MM.dd_HH.mm")
-                    env.TEST_OUTPUT = "Tests/TestResults/${env.FORMATTED_DATE}"
-                    env.NAME = env.JOB_NAME.replace('%2F', '/')
-                    env.TITLE = "$env.NAME | #$env.BUILD_NUMBER"
+                    def dateFormat = new Date().format("yyyy.MM.dd_HH.mm")
+
+                    ctx.email = ctx.email?.trim()
+                    ctx.jobName = env.JOB_NAME.replace('%2F', '/')
+                    ctx.testOutput = "./Tests/TestResults/${dateFormat}"
+                    ctx.startTime = new Date(currentBuild.startTimeInMillis)
                 }
+            }
+        }
 
-                echo "1: $env.TITLE"
-                echo "2: $env.NAME"
-                echo "3: ${env.BUILD_DISPLAY_NAME}"
-                echo """
-                4: $currentBuild.fullDisplayName
-                """
-
+        stage('Config') {
+            steps {
+                echo 'Update credential in connection string...'
+                pwsh '& ./ii.ps1 -EditConn -Username $env:SqlServer_USR -Password $env:SqlServer_PSW'
             }
         }
 
@@ -46,16 +61,15 @@ pipeline {
 
                         projects.each { proj ->
                             parallelStages[proj] = {
-                                pwsh '& ./ii.ps1 -Test -Projects ' + proj
+                                pwsh "& ./ii.ps1 -Test -TestNoBuild -Projects '${proj}' -TestOutput '${ctx.testOutput}'"
                             }
                         }
 
                         parallel(parallelStages)
                     } else {
-                        echo 'Running tests sequentially...'
                         echo 'Running integration tests...'
-                        pwsh '& ./ii.ps1 -Test' + env.FORMATTED_DATE
-                        echo 'Running unit tests...'
+                        pwsh "& ./ii.ps1 -Test -TestNoBuild -TestOutput '${ctx.testOutput}'"
+
                         pwsh '& ./ii.ps1 -Test -ExitCode ' + params['Exit Code for Tests']
 
                         if (params['Test Pwsh throw']) {
@@ -67,16 +81,68 @@ pipeline {
             }
         }
 
+        stage('Report') {
+            steps {
+                echo 'Collecting test results...'
+
+                // mstest(
+                //     testResultsFile: "${ctx.testOutput}/*.trx",
+                //     failOnError: true
+                // )
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                echo 'Verifying test results...'
+
+                script {
+                    def result = currentBuild.result ?: 'SUCCESS'
+                    echo "Build result after mstest: ${result}"
+
+                    if (ctx.email && result == 'UNSTABLE') {
+                        mail(
+                            to: ctx.email,
+                            subject: "⚠️ TEST FAILED: ${currentBuild.fullDisplayName}",
+                            body: """
+                            ────────────────────────────────────────
+                            TEST FAILURE
+
+                            Started: ${ctx.startTime}
+                            Duration: ${currentBuild.durationString}
+                            ────────────────────────────────────────
+
+                            Summary
+                               - Job: ${ctx.jobName}
+                               - Build: #${env.BUILD_NUMBER}
+                               - Result: UNSTABLE
+
+                            Quick Links
+                               - Build: ${env.BUILD_URL}
+                               - Console: ${env.BUILD_URL}console
+                               - Tests: ${env.BUILD_URL}testReport
+
+                            Please review the test failures and take corrective action.
+
+                            Regards,
+                            Jenkins CI
+                            """.stripIndent().trim()
+                        )
+                    }
+                }
+            }
+        }
+
         stage('Publish') {
             when {
-                branch comparator: 'EQUALS', pattern: 'main'
+                branch comparator: 'EQUALS', pattern: 'master'
             }
             steps {
                 echo 'Publishing the CLI...'
-                pwsh '& ./ii.ps1 -Publish'
+                pwsh '& ./ii.ps1 -Publish -NoPrompt'
 
                 archiveArtifacts(
-                    artifacts: 'Delivery.Cli\\bin\\ifsintall_v*.zip',
+                    artifacts: '**/Delivery.Cli/bin/ifsinstall_v*.zip',
                     fingerprint: true,
                     onlyIfSuccessful: true,
                     allowEmptyArchive: true
@@ -88,24 +154,82 @@ pipeline {
     post {
         success {
             echo 'Pipeline completed successfully ✅'
+
+            script {
+                def prevResult = currentBuild.previousBuild?.result
+                def currResult = currentBuild.currentResult
+
+                if (ctx.email &&prevResult != 'SUCCESS' && currResult == 'SUCCESS') {
+                    mail(
+                        to: ctx.email,
+                        subject: "✅ BACK TO STABLE: ${currentBuild.fullDisplayName}",
+                        body: """
+                        ────────────────────────────────────────
+                        TEST PASSED
+
+                        Started: ${ctx.startTime}
+                        Duration: ${currentBuild.durationString}
+                        ────────────────────────────────────────
+
+                        Summary
+                            - Job: ${ctx.jobName}
+                            - Build: #${env.BUILD_NUMBER}
+                            - Result: SUCCESS
+
+                        Quick Links
+                            - Build: ${env.BUILD_URL}
+                            - Console: ${env.BUILD_URL}console
+                            - Tests: ${env.BUILD_URL}testReport
+
+                        The issues causing previous test failures have been resolved. The build is now stable.
+
+                        Regards,
+                        Jenkins CI
+                        """.stripIndent().trim()
+                    )
+                }
+            }
+
+            echo '🧹 Cleaning up workspace...'
+            pwsh '& ./ii.ps1 -RemoveBin -RemoveTestUser -ResetConn'
         }
         failure {
             echo 'Pipeline failed ❌'
             script {
-                if (env.IFSINSTALL_NOTIFY_EMAIL?.trim()) {
-                    // mail(
-                    //     to: env.IFSINSTALL_NOTIFY_EMAIL,
-                    //     subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} ❌",
-                    //     body: "Check log: ${env.BUILD_URL}"
-                    // )
-                    echo 'Emailed.'
+                if (ctx.email) {
+                    mail(
+                        to: ctx.email,
+                        subject: "❌ BUILD FAILED: ${currentBuild.fullDisplayName} - Immediate Action Required",
+                        body: """
+                        ────────────────────────────────────────
+                        BUILD FAILURE
+
+                        Started: ${ctx.startTime}
+                        Duration: ${currentBuild.durationString}
+                        ────────────────────────────────────────
+
+                        Summary
+                           - Job: ${ctx.jobName}
+                           - Build: #${env.BUILD_NUMBER}
+                           - Result: FAILED
+
+                        Quick Links
+                           - Build: ${env.BUILD_URL}
+                           - Console: ${env.BUILD_URL}console
+
+                        Please investigate the failure as soon as possible to maintain the integrity of the build process.
+
+                        Regards,
+                        Jenkins CI
+                        """.stripIndent().trim()
+                    )
                 } else {
-                    echo 'No notification email configured ($env.IFSINSTALL_NOTIFY_EMAIL is missing or empty).'
+                    echo 'No notification email configured ($ctx.email is missing or empty).'
                 }
             }
         }
         always {
-            echo 'Cleaning up workspace...'
+            echo 'Pipeline finished 🏁'
         }
     }
 }
