@@ -143,6 +143,7 @@ pipeline {
                         mail(
                             to: ctx.email,
                             subject: "⚠️ TEST FAILED: ${currentBuild.fullDisplayName}",
+                            mimeType: 'text/html',
                             body: buildEmailBody(
                                 ctx,
                                 "⚠️ TEST UNSTABLE",
@@ -186,6 +187,7 @@ pipeline {
                     mail(
                         to: ctx.email,
                         subject: "✅ BACK TO STABLE: ${currentBuild.fullDisplayName}",
+                        mimeType: 'text/html',
                         body: buildEmailBody(
                             ctx,
                             "✅ TEST PASSED",
@@ -207,6 +209,7 @@ pipeline {
                     mail(
                         to: ctx.email,
                         subject: "❌ BUILD FAILED: ${currentBuild.fullDisplayName} - Immediate Action Required",
+                        mimeType: 'text/html',
                         body: buildEmailBody(
                             ctx,
                             "❌ BUILD FAILURE",
