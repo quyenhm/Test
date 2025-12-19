@@ -109,7 +109,7 @@ pipeline {
                             subject: "⚠️ TEST FAILED: ${currentBuild.fullDisplayName}",
                             mimeType: 'text/html',
                             body: emailTpl.build(
-                                ctx: ctx,
+                                ctx,
                                 title: "⚠️ TEST UNSTABLE",
                                 result: "UNSTABLE",
                                 color: "#f39c12",
@@ -153,7 +153,7 @@ pipeline {
                         subject: "✅ BACK TO STABLE: ${currentBuild.fullDisplayName}",
                         mimeType: 'text/html',
                         body: emailTpl.build(
-                            ctx: ctx,
+                            ctx,
                             title: "✅ TEST PASSED",
                             result: "SUCCESS",
                             color: "#27ae60",
@@ -175,7 +175,7 @@ pipeline {
                         subject: "❌ BUILD FAILED: ${currentBuild.fullDisplayName} - Immediate Action Required",
                         mimeType: 'text/html',
                         body: emailTpl.build(
-                            ctx: ctx,
+                            ctx,
                             title: "❌ BUILD FAILURE",
                             result: "FAILED",
                             color: "#c0392b",
