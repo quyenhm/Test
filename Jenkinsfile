@@ -1,4 +1,4 @@
-def emailTpl = libraryResource 'Jenkins/emailTemplate.groovy'
+def emailTpl = load 'Jenkins/emailTemplate.groovy'
 
 def ctx = [
     email : null,
