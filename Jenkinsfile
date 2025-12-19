@@ -29,7 +29,7 @@ pipeline {
                 script {
                     def dateFormat = new Date().format("yyyy.MM.dd_HH.mm")
 
-                    ctx.email = ctx.email?.trim()
+                    ctx.email = env.IFSINSTALL_NOTIFY_EMAIL?.trim()
                     ctx.jobName = env.JOB_NAME.replace('%2F', '/')
                     ctx.testOutput = "./Tests/TestResults/${dateFormat}"
                     ctx.startTime = new Date(currentBuild.startTimeInMillis)
