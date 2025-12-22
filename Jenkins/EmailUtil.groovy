@@ -48,3 +48,5 @@ void sendEmail(Map data = [:]) {
         echo 'No notification email configured ($ctx.email is missing or empty).'
     }
 }
+
+return this
