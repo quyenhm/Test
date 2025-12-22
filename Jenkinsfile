@@ -1,6 +1,8 @@
-def emailTpl
+/* groovylint-disable LineLength, NestedBlockDepth */
 
-def ctx = [
+def emailUtil
+
+Map ctx = [
     email: null,
     jobName: null,
     testOutput: null,
@@ -25,13 +27,12 @@ pipeline {
     }
 
     stages {
-
         stage('Init') {
             steps {
                 script {
-                    emailTpl = load 'Jenkins/email.groovy'
+                    emailUtil = load 'Jenkins/EmailUtil.groovy'
 
-                    def dateFormat = new Date().format("yyyy.MM.dd_HH.mm")
+                    String dateFormat = new Date().format('yyyy.MM.dd_HH.mm')
 
                     ctx.email = env.IFSINSTALL_NOTIFY_EMAIL?.trim()
                     ctx.jobName = env.JOB_NAME.replace('%2F', '/')
@@ -60,8 +61,8 @@ pipeline {
                 script {
                     if (params['Run Tests in Parallel?']) {
                         echo 'Running tests in parallel...'
-                        def projects = ['CORE', 'AML', 'SAFE', 'BW', 'IB', 'DIGI', 'SYS', 'CLI', 'LIC']
-                        def parallelStages = [:]
+                        String[] projects = ['CORE', 'AML', 'SAFE', 'BW', 'IB', 'DIGI', 'SYS', 'CLI', 'LIC']
+                        Map parallelStages = [:]
 
                         projects.each { proj ->
                             parallelStages[proj] = {
@@ -101,16 +102,17 @@ pipeline {
                 echo 'Verifying test results...'
 
                 script {
-                    def result = currentBuild.result ?: 'SUCCESS'
+                    String result = currentBuild.result ?: 'SUCCESS'
                     echo "Build result after mstest: ${result}"
 
                     if (result == 'UNSTABLE') {
-                        emailTpl.sendEmail([
+                        emailUtil.sendEmail([
                             email: ctx.email,
-                            title: "⚠️ TEST UNSTABLE",
+                            title: '⚠️ TEST UNSTABLE',
                             jobName: ctx.jobName,
                             startTime: ctx.startTime,
-                            message: "Some tests are unstable or flaky. Please review the test results and take appropriate action."
+                            color: '#f39c12',
+                            message: 'Please review the test failures and take corrective action.'
                         ])
                     }
                 }
@@ -140,16 +142,17 @@ pipeline {
             echo 'Pipeline completed successfully ✅'
 
             script {
-                def prevResult = currentBuild.previousBuild?.result
-                def currResult = currentBuild.currentResult
+                String prevResult = currentBuild.previousBuild?.result
+                String currResult = currentBuild.currentResult
 
                 if (prevResult != 'SUCCESS' && currResult == 'SUCCESS') {
-                    emailTpl.sendEmail([
+                    emailUtil.sendEmail([
                         email: ctx.email,
-                        title: "✅ TEST PASSED",
+                        title: '✅ TEST PASSED',
                         jobName: ctx.jobName,
                         startTime: ctx.startTime,
-                        message: "The issues causing previous test failures have been resolved. The build is now stable."
+                        color: '#27ae60',
+                        message: 'The issues causing previous test failures have been resolved. The build is now stable.'
                     ])
                 }
             }
@@ -160,14 +163,14 @@ pipeline {
         failure {
             echo 'Pipeline failed ❌'
             script {
-                emailTpl.sendEmail([
+                emailUtil.sendEmail([
                     email: ctx.email,
-                    title: "❌ BUILD FAILURE",
+                    title: '❌ BUILD FAILURE',
                     jobName: ctx.jobName,
                     startTime: ctx.startTime,
-                    message: "Please investigate the failure as soon as possible to maintain the integrity of the build process.",
-                    showTests: false,
-                    color: "#c0392b"
+                    color: '#c0392b',
+                    message: 'Please investigate the failure as soon as possible to maintain the integrity of the build process.',
+                    showTests: false
                 ])
             }
         }
