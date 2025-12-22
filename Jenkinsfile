@@ -22,8 +22,8 @@ pipeline {
 
     parameters {
         booleanParam(name: 'RunTestsInParallel', defaultValue: false, description: 'Run Tests in Parallel?')
-        booleanParam defaultValue: false, name: 'Test Pwsh throw'
-        string defaultValue: '0', name: 'Exit Code for Tests'
+        booleanParam(name: 'TestPwshThrow', defaultValue: false, description: 'Test Pwsh throw')
+        string(name: 'ExitCodeForTests', defaultValue: '0', description: 'Exit code for tests step')
     }
 
     stages {
@@ -68,9 +68,9 @@ pipeline {
                         echo 'Running integration tests...'
                         pwsh "& ./ii.ps1 -Test -TestNoBuild -TestOutput '${ctx.testOutput}'"
 
-                        pwsh '& ./ii.ps1 -Test -ExitCode ' + params['Exit Code for Tests']
+                        pwsh '& ./ii.ps1 -Test -ExitCode ' + params.ExitCodeForTests
 
-                        if (params['Test Pwsh throw']) {
+                        if (params.TestPwshThrow) {
                             echo 'Running Pwsh throw test...'
                             pwsh '& ./ii.ps1 -Throw'
                         }
