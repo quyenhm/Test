@@ -1,6 +1,3 @@
-void removeEmoji(String s) {
-    s.replaceAll(/[\p{So}\p{Cn}\p{Sk}\p{Cs}]/, '')
-}
 
 void sendEmail(Map data = [:]) {
     String showTests = data.get('showTests', true) ? 'normal' : 'none'
@@ -10,7 +7,8 @@ void sendEmail(Map data = [:]) {
         <!DOCTYPE html>
         <html>
         <body style="font-family: 'Mulish', 'Segoe UI', Lato, Tahoma, sans-serif; color:#333;">
-            <h2 style="color:${data.color};"><b>${removeEmoji(data.title)}</b></h2>
+            <h2 style="color:${data.color};"><b>${data.result}</b></h2>
+            <hr>
             <table>
                 <tr>
                     <td><b>Started</b></td>
@@ -23,6 +21,7 @@ void sendEmail(Map data = [:]) {
                     <td>${currentBuild.durationString}</td>
                 </tr>
             </table>
+            <hr>
             <h3>Summary</h3>
             <ul>
                 <li><b>Job:</b> ${env.JOB_NAME.tokenize('/').dropRight(1).last()}</li>

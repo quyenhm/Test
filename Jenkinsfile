@@ -109,6 +109,7 @@ pipeline {
                         emailUtil.sendEmail([
                             email: ctx.email,
                             title: '⚠️ TEST UNSTABLE',
+                            result: 'TEST UNSTABLE',
                             jobName: ctx.jobName,
                             startTime: ctx.startTime,
                             color: '#f5ba45',
@@ -149,6 +150,7 @@ pipeline {
                     emailUtil.sendEmail([
                         email: ctx.email,
                         title: '✅ BACK TO STABLE',
+                        result: 'TEST PASSED',
                         jobName: ctx.jobName,
                         startTime: ctx.startTime,
                         color: '#8ac054',
@@ -166,6 +168,7 @@ pipeline {
                 emailUtil.sendEmail([
                     email: ctx.email,
                     title: '❌ BUILD FAILED',
+                    result: 'BUILD FAILED',
                     jobName: ctx.jobName,
                     startTime: ctx.startTime,
                     color: '#e8563f',
