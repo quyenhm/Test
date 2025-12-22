@@ -7,7 +7,7 @@ void sendEmail(Map data = [:]) {
         <!DOCTYPE html>
         <html>
         <body style="font-family: 'Mulish', 'Segoe UI', 'Open Sans', sans-serif; color:#333;">
-            <h2 style="color:${data.color};">${data.title}</h2>
+            <h2 style="color:${data.color};"><b>${data.title}</b></h2>
             <table>
                 <tr>
                     <td><b>Started</b></td>
@@ -22,7 +22,7 @@ void sendEmail(Map data = [:]) {
             </table>
             <h3>Summary</h3>
             <ul>
-                <li><b>Job:</b> ${currentBuild.projectName}</li>
+                <li><b>Job:</b> ${env.JOB_NAME.tokenize('/').dropRight(1).last()}</li>
                 <li><b>Branch:</b> ${env.BRANCH_NAME}</li>
                 <li><b>Build:</b> #${env.BUILD_NUMBER}</li>
             </ul>
