@@ -1,5 +1,26 @@
+/* groovylint-disable LineLength, NestedBlockDepth */
+
+def emailUtil
+
+String dateFormat = new Date().format('yyyy.MM.dd_HH.mm')
+
+Map ctx = [
+    email: env.IFSINSTALL_NOTIFY_EMAIL?.trim(),
+    jobName: env.JOB_NAME.replace('%2F', '/'),
+    testOutput: "./Tests/TestResults/${dateFormat}",
+    startTime: new Date(currentBuild.startTimeInMillis),
+]
+
 pipeline {
     agent any
+
+    environment {
+        SqlServer = credentials('SQL_SERVER')
+    }
+
+    options {
+        disableConcurrentBuilds()
+    }
 
     parameters {
         booleanParam defaultValue: false, name: 'Run Tests in Parallel?'
@@ -8,6 +29,21 @@ pipeline {
     }
 
     stages {
+        stage('Init') {
+            steps {
+                script {
+                    emailUtil = load 'Jenkins/EmailUtil.groovy'
+                }
+            }
+        }
+
+        stage('Config') {
+            steps {
+                echo 'Update credential in connection string...'
+                pwsh '& ./ii.ps1 -EditConn -Username $env:SqlServer_USR -Password $env:SqlServer_PSW'
+            }
+        }
+
         stage('Build') {
             steps {
                 echo 'Building app'
@@ -20,21 +56,20 @@ pipeline {
                 script {
                     if (params['Run Tests in Parallel?']) {
                         echo 'Running tests in parallel...'
-                        def projects = ['CORE', 'AML', 'SAFE', 'BW', 'IB', 'DIGI', 'SYS', 'CLI', 'LIC']
-                        def parallelStages = [:]
+                        String[] projects = ['CORE', 'AML', 'SAFE', 'BW', 'IB', 'DIGI', 'SYS', 'CLI', 'LIC']
+                        Map parallelStages = [:]
 
                         projects.each { proj ->
                             parallelStages[proj] = {
-                                pwsh '& ./ii.ps1 -Test -Projects ' + proj
+                                pwsh "& ./ii.ps1 -Test -TestNoBuild -Projects '${proj}' -TestOutput '${ctx.testOutput}'"
                             }
                         }
 
                         parallel(parallelStages)
                     } else {
-                        echo 'Running tests sequentially...'
                         echo 'Running integration tests...'
-                        pwsh '& ./ii.ps1 -Test'
-                        echo 'Running unit tests...'
+                        pwsh "& ./ii.ps1 -Test -TestNoBuild -TestOutput '${ctx.testOutput}'"
+
                         pwsh '& ./ii.ps1 -Test -ExitCode ' + params['Exit Code for Tests']
 
                         if (params['Test Pwsh throw']) {
@@ -46,16 +81,50 @@ pipeline {
             }
         }
 
+        stage('Report') {
+            steps {
+                echo 'Collecting test results...'
+
+                // mstest(
+                //     testResultsFile: "${ctx.testOutput}/*.trx",
+                //     failOnError: true
+                // )
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                echo 'Verifying test results...'
+
+                script {
+                    String result = currentBuild.result ?: 'SUCCESS'
+                    echo "Build result after mstest: ${result}"
+
+                    if (result == 'UNSTABLE') {
+                        emailUtil.sendEmail([
+                            email: ctx.email,
+                            title: '⚠️ TEST UNSTABLE',
+                            result: 'TEST UNSTABLE',
+                            jobName: ctx.jobName,
+                            startTime: ctx.startTime,
+                            color: '#f5ba45',
+                            message: 'Please review the test failures and take corrective action.'
+                        ])
+                    }
+                }
+            }
+        }
+
         stage('Publish') {
             when {
-                branch comparator: 'EQUALS', pattern: 'main'
+                branch comparator: 'EQUALS', pattern: 'master'
             }
             steps {
                 echo 'Publishing the CLI...'
-                pwsh '& ./ii.ps1 -Publish'
+                pwsh '& ./ii.ps1 -Publish -NoPrompt'
 
                 archiveArtifacts(
-                    artifacts: 'Delivery.Cli\\bin\\ifsintall_v*.zip',
+                    artifacts: '**/Delivery.Cli/bin/ifsinstall_v*.zip',
                     fingerprint: true,
                     onlyIfSuccessful: true,
                     allowEmptyArchive: true
@@ -67,24 +136,44 @@ pipeline {
     post {
         success {
             echo 'Pipeline completed successfully ✅'
+
+            script {
+                String prevResult = currentBuild.previousBuild?.result
+                String currResult = currentBuild.currentResult
+
+                if (prevResult != 'SUCCESS' && currResult == 'SUCCESS') {
+                    emailUtil.sendEmail([
+                        email: ctx.email,
+                        title: '✅ BACK TO STABLE',
+                        result: 'TEST PASSED',
+                        jobName: ctx.jobName,
+                        startTime: ctx.startTime,
+                        color: '#8ac054',
+                        message: 'The issues causing previous test failures have been resolved. The build is now stable.'
+                    ])
+                }
+            }
+
+            echo '🧹 Cleaning up workspace...'
+            pwsh '& ./ii.ps1 -RemoveBin -RemoveTestUser -ResetConn'
         }
         failure {
             echo 'Pipeline failed ❌'
             script {
-                if (env.IFSINSTALL_NOTIFY_EMAIL?.trim()) {
-                    // mail(
-                    //     to: env.IFSINSTALL_NOTIFY_EMAIL,
-                    //     subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} ❌",
-                    //     body: "Check log: ${env.BUILD_URL}"
-                    // )
-                    echo 'Emailed.'
-                } else {
-                    echo 'No notification email configured ($env.IFSINSTALL_NOTIFY_EMAIL is missing or empty).'
-                }
+                emailUtil.sendEmail([
+                    email: ctx.email,
+                    title: '❌ BUILD FAILED',
+                    result: 'BUILD FAILED',
+                    jobName: ctx.jobName,
+                    startTime: ctx.startTime,
+                    color: '#e8563f',
+                    message: 'Please investigate the failure as soon as possible to maintain the integrity of the build process.',
+                    showTests: false
+                ])
             }
         }
         always {
-            echo 'Cleaning up workspace...'
+            echo 'Pipeline finished 🏁'
         }
     }
 }
