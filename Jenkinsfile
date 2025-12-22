@@ -111,7 +111,7 @@ pipeline {
                             title: '⚠️ TEST UNSTABLE',
                             jobName: ctx.jobName,
                             startTime: ctx.startTime,
-                            color: '#f39c12',
+                            color: '#f5ba45',
                             message: 'Please review the test failures and take corrective action.'
                         ])
                     }
@@ -151,7 +151,7 @@ pipeline {
                         title: '✅ BACK TO STABLE',
                         jobName: ctx.jobName,
                         startTime: ctx.startTime,
-                        color: '#27ae60',
+                        color: '#8ac054',
                         message: 'The issues causing previous test failures have been resolved. The build is now stable.'
                     ])
                 }
@@ -165,10 +165,10 @@ pipeline {
             script {
                 emailUtil.sendEmail([
                     email: ctx.email,
-                    title: '❌ BUILD FAILURE',
+                    title: '❌ BUILD FAILED',
                     jobName: ctx.jobName,
                     startTime: ctx.startTime,
-                    color: '#c0392b',
+                    color: '#e8563f',
                     message: 'Please investigate the failure as soon as possible to maintain the integrity of the build process.',
                     showTests: false
                 ])

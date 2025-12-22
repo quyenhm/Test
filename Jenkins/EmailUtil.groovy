@@ -6,24 +6,23 @@ void sendEmail(Map data = [:]) {
         string body = """
         <!DOCTYPE html>
         <html>
-        <head>
-            <link href="https://fonts.googleapis.com/css2?family=Oxygen:wght@300;400;700&display=swap" rel="stylesheet">
-        </head>
-        <body style="font-family: 'Oxygen', sans-serif; color:#333;">
+        <body style="font-family: 'Mulish', 'Segoe UI', 'Open Sans', sans-serif; color:#333;">
             <h2 style="color:${data.color};">${data.title}</h2>
-            <table cellpadding="6" cellspacing="0">
+            <table>
                 <tr>
                     <td><b>Started</b></td>
+                    <td>:</td>
                     <td>${data.startTime}</td>
                 </tr>
                 <tr>
                     <td><b>Duration</b></td>
+                    <td>:</td>
                     <td>${currentBuild.durationString}</td>
                 </tr>
             </table>
             <h3>Summary</h3>
             <ul>
-                <li><b>Job:</b> ${env.JOB_NAME}</li>
+                <li><b>Job:</b> ${env.JOB_BASE_NAME}</li>
                 <li><b>Branch:</b> ${env.BRANCH_NAME}</li>
                 <li><b>Build:</b> #${env.BUILD_NUMBER}</li>
             </ul>
@@ -31,11 +30,12 @@ void sendEmail(Map data = [:]) {
             <ul>
                 <li><a href="${env.BUILD_URL}">Build Information</a></li>
                 <li><a href="${env.BUILD_URL}console">Console Output</a></li>
-                ${showTests ? "<li><a href='${env.BUILD_URL}testReport'>Test Results</a></li>" : ''}
+                <li style="display: ${showTests ? 'normal' : 'none'};"><a href='${env.BUILD_URL}testReport'>Test Results</a></li>
             </ul>
             <p>${data.message}</p>
             <p style="color:#777;">
-                Regards,<br />Jenkins CI
+                Regards,<br />
+                Jenkins CI
             </p>
         </body>
         </html>
