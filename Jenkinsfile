@@ -31,6 +31,7 @@ pipeline {
             steps {
                 script {
                     emailUtil = load 'Jenkins/EmailUtil.groovy'
+                    echo "${ctx.startTime}"
                 }
             }
         }
