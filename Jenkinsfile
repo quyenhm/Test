@@ -21,7 +21,7 @@ pipeline {
     }
 
     parameters {
-        booleanParam defaultValue: false, name: 'Run Tests in Parallel?'
+        booleanParam(name: 'RunTestsInParallel', defaultValue: false, description: 'Run Tests in Parallel?')
         booleanParam defaultValue: false, name: 'Test Pwsh throw'
         string defaultValue: '0', name: 'Exit Code for Tests'
     }
@@ -52,7 +52,7 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    if (params['Run Tests in Parallel?']) {
+                    if (params.RunTestsInParallel) {
                         echo 'Running tests in parallel...'
                         String[] projects = ['CORE', 'AML', 'SAFE', 'BW', 'IB', 'DIGI', 'SYS', 'CLI', 'LIC']
                         Map parallelStages = [:]
