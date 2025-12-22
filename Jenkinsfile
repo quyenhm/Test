@@ -2,11 +2,13 @@
 
 def emailUtil
 
+String dateFormat = new Date().format('yyyy.MM.dd_HH.mm')
+
 Map ctx = [
-    email: null,
-    jobName: null,
-    testOutput: null,
-    startTime: null,
+    email: env.IFSINSTALL_NOTIFY_EMAIL?.trim(),
+    jobName: env.JOB_NAME.replace('%2F', '/'),
+    testOutput: "./Tests/TestResults/${dateFormat}",
+    startTime: new Date(currentBuild.startTimeInMillis),
 ]
 
 pipeline {
@@ -31,13 +33,6 @@ pipeline {
             steps {
                 script {
                     emailUtil = load 'Jenkins/EmailUtil.groovy'
-
-                    String dateFormat = new Date().format('yyyy.MM.dd_HH.mm')
-
-                    ctx.email = env.IFSINSTALL_NOTIFY_EMAIL?.trim()
-                    ctx.jobName = env.JOB_NAME.replace('%2F', '/')
-                    ctx.testOutput = "./Tests/TestResults/${dateFormat}"
-                    ctx.startTime = new Date(currentBuild.startTimeInMillis)
                 }
             }
         }
