@@ -3,8 +3,17 @@ param(
     [switch] $Test,
     [switch] $Build,
     [switch] $Publish,
+    [switch] $RemoveBin,
+    [switch] $RemoveTestUser,
+    [switch] $ResetConn,
+    [switch] $NoPrompt,
+    [switch] $TestNoBuild,
+    [switch] $TestOutput,
+    [string] $Projects,
     [string] $Username,
-    [string] $Password
+    [string] $Password,
+    [int] $ExitCode,
+    [switch] $Throw
 )
 
 if ($EditConn) {
@@ -12,12 +21,21 @@ if ($EditConn) {
 }
 
 if ($Test) {
-    Write-Host "Running tests..."
+    Write-Host "Running tests $Projects..."
+    Write-Host "Stop script by 'exit $ExitCode'"
+    exit $ExitCode
     Write-Host "All tests passed!"
+}
+
+if ($Throw) {
+    Write-Host "Pwsh throw test"
+    throw "Simulated error for testing purposes."
 }
 
 if ($Build) {
     Write-Host "Building the project..."
+    Write-Host "Stop script by 'return'"
+    return
     Write-Host "Build completed successfully."
 }
 
@@ -25,6 +43,11 @@ if ($Publish) {
     Write-Host "Publishing the project..."
     Write-Host "v2.0.0"
     Write-Host "Project published successfully."
+}
+
+if ($RemoveBin) {
+    Write-Host "Cleanup..."
+    Write-Host "Remove bin and obj folders."
 }
 
 Write-Host "Done!"
