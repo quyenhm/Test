@@ -6,7 +6,10 @@ void sendEmail(Map data = [:]) {
         string body = """
         <!DOCTYPE html>
         <html>
-        <body style="font-family: 'Segoe UI', sans-serif; color:#333;">
+        <head>
+            <link href="https://fonts.googleapis.com/css2?family=Oxygen:wght@300;400;700&display=swap" rel="stylesheet">
+        </head>
+        <body style="font-family: 'Oxygen', sans-serif; color:#333;">
             <h2 style="color:${data.color};">${data.title}</h2>
             <table cellpadding="6" cellspacing="0">
                 <tr>
@@ -20,14 +23,15 @@ void sendEmail(Map data = [:]) {
             </table>
             <h3>Summary</h3>
             <ul>
-                <li><b>Job:</b> ${data.jobName}</li>
+                <li><b>Job:</b> ${env.JOB_NAME}</li>
+                <li><b>Branch:</b> ${env.BRANCH_NAME}</li>
                 <li><b>Build:</b> #${env.BUILD_NUMBER}</li>
             </ul>
             <h3>Quick Links</h3>
             <ul>
-                <li><a href="${env.BUILD_URL}">Build</a></li>
-                <li><a href="${env.BUILD_URL}console">Console</a></li>
-                ${showTests ? "<li><a href='${env.BUILD_URL}testReport'>Tests</a></li>" : ''}
+                <li><a href="${env.BUILD_URL}">Build Information</a></li>
+                <li><a href="${env.BUILD_URL}console">Console Output</a></li>
+                ${showTests ? "<li><a href='${env.BUILD_URL}testReport'>Test Results</a></li>" : ''}
             </ul>
             <p>${data.message}</p>
             <p style="color:#777;">

@@ -148,7 +148,7 @@ pipeline {
                 if (prevResult != 'SUCCESS' && currResult == 'SUCCESS') {
                     emailUtil.sendEmail([
                         email: ctx.email,
-                        title: '✅ TEST PASSED',
+                        title: '✅ BACK TO STABLE',
                         jobName: ctx.jobName,
                         startTime: ctx.startTime,
                         color: '#27ae60',
