@@ -1,9 +1,9 @@
 
 void sendEmail(Map data = [:]) {
-    boolean showTests = data.get('showTests', true)
+    String showTests = data.get('showTests', true) ? 'normal' : 'none'
 
     if (data.email) {
-        string body = """
+        String body = """
         <!DOCTYPE html>
         <html>
         <body style="font-family: 'Mulish', 'Segoe UI', 'Open Sans', sans-serif; color:#333;">
@@ -22,7 +22,7 @@ void sendEmail(Map data = [:]) {
             </table>
             <h3>Summary</h3>
             <ul>
-                <li><b>Job:</b> ${env.JOB_BASE_NAME}</li>
+                <li><b>Job:</b> ${currentBuild.projectName}</li>
                 <li><b>Branch:</b> ${env.BRANCH_NAME}</li>
                 <li><b>Build:</b> #${env.BUILD_NUMBER}</li>
             </ul>
@@ -30,7 +30,7 @@ void sendEmail(Map data = [:]) {
             <ul>
                 <li><a href="${env.BUILD_URL}">Build Information</a></li>
                 <li><a href="${env.BUILD_URL}console">Console Output</a></li>
-                <li style="display: ${showTests ? 'normal' : 'none'};"><a href='${env.BUILD_URL}testReport'>Test Results</a></li>
+                <li style="display: ${showTests};"><a href='${env.BUILD_URL}testReport'>Test Results</a></li>
             </ul>
             <p>${data.message}</p>
             <p style="color:#777;">
