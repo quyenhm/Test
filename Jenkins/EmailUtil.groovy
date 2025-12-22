@@ -31,6 +31,7 @@ void sendEmail(Map data = [:]) {
             <h3>Quick Links</h3>
             <ul>
                 <li><a href="${env.BUILD_URL}">Build Information</a></li>
+                <li><a href="${env.BUILD_URL}pipeline-overview">Pipeline Overview</a></li>
                 <li><a href="${env.BUILD_URL}console">Console Output</a></li>
                 <li style="display: ${showTests};"><a href='${env.BUILD_URL}testReport'>Test Results</a></li>
             </ul>
