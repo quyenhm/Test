@@ -6,7 +6,7 @@ Map ctx = [
     email: env.IFSINSTALL_NOTIFY_EMAIL?.trim(),
     jobName: env.JOB_NAME.replace('%2F', '/'),
     testOutput: './Tests/TestResults/' + new Date().format('yyyy.MM.dd_HH.mm'),
-    startTime: Instant.ofEpochMilli(currentBuild.startTimeInMillis),
+    startTime: java.time.Instant.ofEpochMilli(currentBuild.startTimeInMillis),
 ]
 
 pipeline {
