@@ -44,12 +44,16 @@ void sendEmail(Map data = [:]) {
         </html>
         """.stripIndent().trim()
 
-        mail(
-            to: data.email,
-            subject: "${data.title}: ${currentBuild.fullDisplayName}",
-            mimeType: 'text/html',
-            body: body
-        )
+        try {
+            mail(
+                to: data.email,
+                subject: "${data.title}: ${currentBuild.fullDisplayName}",
+                mimeType: 'text/html',
+                body: body
+            )
+        } catch (err) {
+            echo "Failed to send email to ${data.email}: ${err}"
+        }
     }
     else {
         echo 'No notification email configured ($ctx.email is missing or empty).'

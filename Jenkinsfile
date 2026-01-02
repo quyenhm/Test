@@ -5,8 +5,8 @@ def emailUtil
 Map ctx = [
     email: env.IFSINSTALL_NOTIFY_EMAIL?.trim(),
     jobName: env.JOB_NAME.replace('%2F', '/'),
-    testOutput: './Tests/TestResults/' + new Date().format('yyyy.MM.dd_HH.mm'),
-    startTime: java.time.Instant.ofEpochMilli(currentBuild.startTimeInMillis),
+    testOutput: 'Tests/TestResults/' + new Date().format('yyyy.MM.dd_HH.mm'),
+    startTime: new Date(currentBuild.startTimeInMillis),
 ]
 
 pipeline {
@@ -135,7 +135,6 @@ pipeline {
     post {
         success {
             echo 'Pipeline completed successfully ✅'
-
             script {
                 String prevResult = currentBuild.previousBuild?.result
                 String currResult = currentBuild.currentResult
