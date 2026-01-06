@@ -27,16 +27,6 @@ pipeline {
     }
 
     stages {
-        stage('Fetch') {
-            when {
-                branch comparator: 'EQUALS', pattern: 'main'
-            }
-            steps {
-                echo 'Fetching git tags...'
-                pwsh 'git fetch --tags'
-            }
-        }
-
         stage('Init') {
             steps {
                 script {
@@ -129,6 +119,9 @@ pipeline {
                 branch comparator: 'EQUALS', pattern: 'main'
             }
             steps {
+                echo 'Fetching git tags...'
+                pwsh 'git fetch --tags'
+
                 echo 'Publishing the CLI...'
                 pwsh '& ./ii.ps1 -Publish -NoPrompt'
 
