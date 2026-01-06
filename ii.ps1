@@ -51,7 +51,7 @@ if ($Publish) {
         $newTime = [DateTime]::Parse($tagDate).ToUniversalTime().Date
         Write-Host "Tag: $gitTag => Using timestamp: $newTime"
 
-        New-Item -ItemType File -Path ".\file_$gitTag.txt" -Force -Value "Published with tag $gitTag on $newTime"
+        New-Item -ItemType File -Path ".\file_$gitTag.txt" -Force -Value "Published with tag $gitTag on $newTime" | Out-Null
     }
     else {
         Write-Host "No git tag found for the current commit: $gitTag"
