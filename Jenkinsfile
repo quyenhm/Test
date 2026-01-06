@@ -29,7 +29,7 @@ pipeline {
     stages {
         stage('Fetch') {
             when {
-                branch comparator: 'EQUALS', pattern: 'master'
+                branch comparator: 'EQUALS', pattern: 'main'
             }
             steps {
                 echo 'Fetching git tags...'
@@ -126,14 +126,14 @@ pipeline {
 
         stage('Publish') {
             when {
-                branch comparator: 'EQUALS', pattern: 'master'
+                branch comparator: 'EQUALS', pattern: 'main'
             }
             steps {
                 echo 'Publishing the CLI...'
                 pwsh '& ./ii.ps1 -Publish -NoPrompt'
 
                 archiveArtifacts(
-                    artifacts: '**/Delivery.Cli/bin/ifsinstall_v*.zip',
+                    artifacts: '**/file_v*.txt',
                     fingerprint: true,
                     onlyIfSuccessful: true,
                     allowEmptyArchive: true
