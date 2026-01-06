@@ -2,12 +2,10 @@
 
 def emailUtil
 
-String dateFormat = new Date().format('yyyy.MM.dd_HH.mm')
-
 Map ctx = [
     email: env.IFSINSTALL_NOTIFY_EMAIL?.trim(),
     jobName: env.JOB_NAME.replace('%2F', '/'),
-    testOutput: "./Tests/TestResults/${dateFormat}",
+    testOutput: 'Tests/TestResults/' + new Date().format('yyyy.MM.dd_HH.mm'),
     startTime: new Date(currentBuild.startTimeInMillis),
 ]
 
@@ -23,16 +21,27 @@ pipeline {
     }
 
     parameters {
-        booleanParam defaultValue: false, name: 'Run Tests in Parallel?'
-        booleanParam defaultValue: false, name: 'Test Pwsh throw'
-        string defaultValue: '0', name: 'Exit Code for Tests'
+        booleanParam(name: 'RunTestsInParallel', defaultValue: false, description: 'Run Tests in Parallel?')
+        booleanParam(name: 'TestPwshThrow', defaultValue: false, description: 'Test Pwsh throw')
+        string(name: 'ExitCodeForTests', defaultValue: '0', description: 'Exit code for tests step')
     }
 
     stages {
+        stage('Fetch') {
+            when {
+                branch comparator: 'EQUALS', pattern: 'main'
+            }
+            steps {
+                echo 'Fetching git tags...'
+                pwsh 'git fetch --tags'
+            }
+        }
+
         stage('Init') {
             steps {
                 script {
                     emailUtil = load 'Jenkins/EmailUtil.groovy'
+                    echo "${ctx.startTime}"
                 }
             }
         }
@@ -54,7 +63,7 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    if (params['Run Tests in Parallel?']) {
+                    if (params.RunTestsInParallel) {
                         echo 'Running tests in parallel...'
                         String[] projects = ['CORE', 'AML', 'SAFE', 'BW', 'IB', 'DIGI', 'SYS', 'CLI', 'LIC']
                         Map parallelStages = [:]
@@ -70,9 +79,9 @@ pipeline {
                         echo 'Running integration tests...'
                         pwsh "& ./ii.ps1 -Test -TestNoBuild -TestOutput '${ctx.testOutput}'"
 
-                        pwsh '& ./ii.ps1 -Test -ExitCode ' + params['Exit Code for Tests']
+                        pwsh '& ./ii.ps1 -Test -ExitCode ' + params.ExitCodeForTests
 
-                        if (params['Test Pwsh throw']) {
+                        if (params.TestPwshThrow) {
                             echo 'Running Pwsh throw test...'
                             pwsh '& ./ii.ps1 -Throw'
                         }
@@ -117,14 +126,14 @@ pipeline {
 
         stage('Publish') {
             when {
-                branch comparator: 'EQUALS', pattern: 'master'
+                branch comparator: 'EQUALS', pattern: 'main'
             }
             steps {
                 echo 'Publishing the CLI...'
                 pwsh '& ./ii.ps1 -Publish -NoPrompt'
 
                 archiveArtifacts(
-                    artifacts: '**/Delivery.Cli/bin/ifsinstall_v*.zip',
+                    artifacts: '**/file_v*.txt',
                     fingerprint: true,
                     onlyIfSuccessful: true,
                     allowEmptyArchive: true
@@ -136,7 +145,6 @@ pipeline {
     post {
         success {
             echo 'Pipeline completed successfully ✅'
-
             script {
                 String prevResult = currentBuild.previousBuild?.result
                 String currResult = currentBuild.currentResult
