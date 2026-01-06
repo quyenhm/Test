@@ -52,7 +52,7 @@ void sendEmail(Map data = [:]) {
                 body: body
             )
         } catch (err) {
-            echo "Failed to send email to ${data.email}: ${err}"
+            echo "Failed to send email to '${data.email}'. Error: ${err}"
         }
     }
     else {

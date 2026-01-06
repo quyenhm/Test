@@ -27,6 +27,16 @@ pipeline {
     }
 
     stages {
+        stage('Fetch') {
+            when {
+                branch comparator: 'EQUALS', pattern: 'master'
+            }
+            steps {
+                echo 'Fetching git tags...'
+                pwsh 'git fetch --tags'
+            }
+        }
+
         stage('Init') {
             steps {
                 script {
