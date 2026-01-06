@@ -41,7 +41,22 @@ if ($Build) {
 
 if ($Publish) {
     Write-Host "Publishing the project..."
-    Write-Host "v2.0.0"
+
+    Write-Host -ForegroundColor Cyan "Retrieving current version tag in git"
+
+    $gitTag = git describe --tags --exact-match 2>$null
+
+    if ($gitTag) {
+        $tagDate = git for-each-ref --format="%(creatordate:iso8601)" refs/tags/$gitTag
+        $newTime = [DateTime]::Parse($tagDate).ToUniversalTime().Date
+        Write-Host "Tag: $gitTag => Using timestamp: $newTime"
+
+        New-Item -ItemType File -Path ".\file_$gitTag.txt" -Force -Value "Published with tag $gitTag on $newTime"
+    }
+    else {
+        Write-Host "No git tag found for the current commit: $gitTag"
+    }
+
     Write-Host "Project published successfully."
 }
 
