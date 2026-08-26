@@ -8,7 +8,7 @@ param(
     [switch] $ResetConn,
     [switch] $NoPrompt,
     [switch] $TestNoBuild,
-    [switch] $TestOutput,
+    [string] $TestOutput,
     [switch] $TestSummary,
     [string] $Projects,
     [string] $Username,
