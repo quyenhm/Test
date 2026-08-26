@@ -84,10 +84,12 @@ pipeline {
             steps {
                 echo 'Collecting test results...'
 
-                // mstest(
-                //     testResultsFile: "${ctx.testOutput}/*.trx",
-                //     failOnError: true
-                // )
+                def summary = mstest(
+                    testResultsFile: '*.trx',
+                    failOnError: true
+                )
+
+                echo summary.getClass()
             }
         }
 
