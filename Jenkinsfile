@@ -90,28 +90,18 @@ pipeline {
                 )
 
                 script {
-                    def trxFiles = findFiles(glob: "*.trx")
+                    String summaryRaw = pwsh(
+                        script: "& ./ii.ps1 -TestSummary -TestOutput '${ctx.testOutput}'",
+                        returnStdout: true
+                    ).trim()
 
-                    if (trxFiles) {
-                        int total = 0
-                        int passed = 0
-                        int failed = 0
-                        int skipped = 0
+                    List<String> parts = summaryRaw.tokenize(',')
 
-                        trxFiles.each { f ->
-                            def xml = new XmlSlurper().parseText(readFile(f.path))
-                            def counters = xml.ResultSummary.Counters
-
-                            total += counters.@total.toInteger()
-                            passed += counters.@passed.toInteger()
-                            failed += counters.@failed.toInteger() + counters.@error.toInteger()
-                            skipped += counters.@notExecuted.toInteger() + counters.@inconclusive.toInteger()
-                        }
-
-                        ctx.totalTests = total
-                        ctx.passedTests = passed
-                        ctx.failedTests = failed
-                        ctx.skippedTests = skipped
+                    if (parts.size() == 4) {
+                        ctx.totalTests = parts[0].toInteger()
+                        ctx.passedTests = parts[1].toInteger()
+                        ctx.failedTests = parts[2].toInteger()
+                        ctx.skippedTests = parts[3].toInteger()
 
                         echo 'Test results:'
                         echo "  Total:   ${ctx.totalTests}"
@@ -119,7 +109,7 @@ pipeline {
                         echo "  Failed:  ${ctx.failedTests}"
                         echo "  Skipped: ${ctx.skippedTests}"
                     } else {
-                        echo 'No .trx files found — unable to compute test counts.'
+                        echo "Unable to parse test counts from ii.ps1 output: '${summaryRaw}'"
                     }
                 }
             }

@@ -9,6 +9,7 @@ param(
     [switch] $NoPrompt,
     [switch] $TestNoBuild,
     [switch] $TestOutput,
+    [switch] $TestSummary,
     [string] $Projects,
     [string] $Username,
     [string] $Password,
@@ -25,6 +26,33 @@ if ($Test) {
     Write-Host "Stop script by 'exit $ExitCode'"
     exit $ExitCode
     Write-Host "All tests passed!"
+}
+
+if ($TestSummary) {
+
+    $total = 0
+    $passed = 0
+    $failed = 0
+    $skipped = 0
+
+    $trxFiles = Get-ChildItem -Path $TestOutput -Filter *.trx -ErrorAction SilentlyContinue
+
+    if (-not $trxFiles) {
+        Write-Output "0,0,0,0"
+        return
+    }
+
+    foreach ($file in $trxFiles) {
+        [xml]$trx = Get-Content $file.FullName
+        $counters = $trx.TestRun.ResultSummary.Counters
+
+        $total += [int]$counters.total
+        $passed += [int]$counters.passed
+        $failed += [int]$counters.failed + [int]$counters.error
+        $skipped += [int]$counters.notExecuted + [int]$counters.inconclusive
+    }
+
+    Write-Output "$total,$passed,$failed,$skipped"
 }
 
 if ($Throw) {
