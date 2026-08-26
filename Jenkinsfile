@@ -91,7 +91,7 @@ pipeline {
 
                 script {
                     String summaryRaw = pwsh(
-                        script: "& ./ii.ps1 -TestSummary -TestOutput '${ctx.testOutput}'",
+                        script: "& ./ii.ps1 -TestSummary -TestOutput .",
                         returnStdout: true
                     ).trim()
 
