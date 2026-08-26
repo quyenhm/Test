@@ -84,13 +84,43 @@ pipeline {
             steps {
                 echo 'Collecting test results...'
 
+                mstest(
+                    testResultsFile: '*.trx',
+                    failOnError: true
+                )
+
                 script {
-                    def summary = mstest(
-                        testResultsFile: '*.trx',
-                        failOnError: true
-                    )
-                    echo "mstest returned: ${summary}"
-                    echo "mstest return type: ${summary?.getClass()}"
+                    def trxFiles = findFiles(glob: "*.trx")
+
+                    if (trxFiles) {
+                        int total = 0
+                        int passed = 0
+                        int failed = 0
+                        int skipped = 0
+
+                        trxFiles.each { f ->
+                            def xml = new XmlSlurper().parseText(readFile(f.path))
+                            def counters = xml.ResultSummary.Counters
+
+                            total += counters.@total.toInteger()
+                            passed += counters.@passed.toInteger()
+                            failed += counters.@failed.toInteger() + counters.@error.toInteger()
+                            skipped += counters.@notExecuted.toInteger() + counters.@inconclusive.toInteger()
+                        }
+
+                        ctx.totalTests = total
+                        ctx.passedTests = passed
+                        ctx.failedTests = failed
+                        ctx.skippedTests = skipped
+
+                        echo 'Test results:'
+                        echo "  Total:   ${ctx.totalTests}"
+                        echo "  Passed:  ${ctx.passedTests}"
+                        echo "  Failed:  ${ctx.failedTests}"
+                        echo "  Skipped: ${ctx.skippedTests}"
+                    } else {
+                        echo 'No .trx files found — unable to compute test counts.'
+                    }
                 }
             }
         }
