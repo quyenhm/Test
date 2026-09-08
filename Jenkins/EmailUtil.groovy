@@ -187,7 +187,7 @@ void sendEmail(Map data = [:]) {
                 <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${textDim};">${pair[1][0]}</div>
                 <div style="font-family:${monoStack};font-size:12px;margin-top:4px;word-break:break-word;">${pair[1][1]}</div>
               </td>
-            ''' : """<td class="meta-cell" width="50%" style="border:none;">&nbsp;</td>"""
+            """ : """<td class="meta-cell" width="50%" style="border:none;">&nbsp;</td>"""
             metaRowsHtml << "<tr>${cell1}${cell2}</tr>"
         }
         String metaStripBlock = metaRowsHtml.join('')
@@ -208,7 +208,7 @@ void sendEmail(Map data = [:]) {
             String fg = link.primary ? '#ffffff' : ''
             String bd = link.primary ? accent : borderStrong
             String colorStyle = fg ? "color:${fg};" : ''
-            '''
+            """
             <tr>
               <td style="padding:0 0 8px 0;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
