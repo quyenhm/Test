@@ -88,22 +88,22 @@ if ($PSCmdlet.ParameterSetName -eq "Help") {
 
 switch ($PSBoundParameters.Keys) {
     "Build" {
-        Write-HostCenter -ForegroundColor Yellow "Build"
+        Write-Host -ForegroundColor Yellow "Build"
     }
     "Publish" {
-        Write-HostCenter -ForegroundColor Yellow "Publish"
+        Write-Host -ForegroundColor Yellow "Publish"
     }
     "EditConn" {
-        Write-HostCenter -ForegroundColor Yellow "Edit Connection String"
+        Write-Host -ForegroundColor Yellow "Edit Connection String"
     }
     "ResetConn" {
-        Write-HostCenter -ForegroundColor Yellow "Reset Connection String"
+        Write-Host -ForegroundColor Yellow "Reset Connection String"
     }
     "RemoveBin" {
-        Write-HostCenter -ForegroundColor Yellow "Remove bin and obj folders"
+        Write-Host -ForegroundColor Yellow "Remove bin and obj folders"
     }
     "Test" {
-        Write-HostCenter -ForegroundColor Yellow "Run Test"
+        Write-Host -ForegroundColor Yellow "Run Test"
     }
     "ETR" {
     }
@@ -133,9 +133,9 @@ switch ($PSBoundParameters.Keys) {
         Write-Output "$total,$passed,$failed,$skipped"
     }
     "RemoveTestUser" {
-        Write-HostCenter -ForegroundColor Yellow "Remove Test User"
+        Write-Host -ForegroundColor Yellow "Remove Test User"
     }
     "AppVersion" {
-        Write-HostCenter -ForegroundColor Yellow "Update App Version"
+        Write-Host -ForegroundColor Yellow "Update App Version"
     }
 }
