@@ -1,11 +1,12 @@
-/* groovylint-disable LineLength, NestedBlockDepth */
+/* groovylint-disable LineLength, NestedBlockDepth, NoJavaUtilDate */
 
 def emailUtil
+def cleanupCatchOptions = [buildResult: 'SUCCESS', stageResult: 'UNSTABLE']
 
 Map ctx = [
     email: env.IFSINSTALL_NOTIFY_EMAIL?.trim(),
     jobName: env.JOB_NAME.replace('%2F', '/'),
-    testOutput: 'Tests/TestResults/' + new Date().format('yyyy.MM.dd_HH.mm'),
+    testOutput: 'Tests/TestResults/2026.01.01_00.00',
     startTime: new Date(currentBuild.startTimeInMillis),
 ]
 
@@ -21,17 +22,17 @@ pipeline {
     }
 
     parameters {
-        booleanParam(name: 'RunTestsInParallel', defaultValue: false, description: 'Run Tests in Parallel?')
-        booleanParam(name: 'TestPwshThrow', defaultValue: false, description: 'Test Pwsh throw')
-        string(name: 'ExitCodeForTests', defaultValue: '0', description: 'Exit code for tests step')
+        booleanParam(name: 'RunTestsInParallel', defaultValue: true, description: 'Run Tests in Parallel?')
     }
 
     stages {
         stage('Init') {
             steps {
                 script {
+                    echo 'Force-apply .gitattributes (destructive, discards changes)'
+                    pwsh 'git rm --cached -r . && git reset --hard'
+
                     emailUtil = load 'Jenkins/EmailUtil.groovy'
-                    echo "${ctx.startTime}"
                 }
             }
         }
@@ -39,7 +40,7 @@ pipeline {
         stage('Config') {
             steps {
                 echo 'Update credential in connection string...'
-                pwsh '& ./ii.ps1 -EditConn -Username $env:SqlServer_USR -Password $env:SqlServer_PSW'
+                pwsh '& ./ii.ps1 -EditConn -SqlInfo $env:SqlServer_PSW'
             }
         }
 
@@ -60,21 +61,14 @@ pipeline {
 
                         projects.each { proj ->
                             parallelStages[proj] = {
-                                pwsh "& ./ii.ps1 -Test -TestNoBuild -Projects '${proj}' -TestOutput '${ctx.testOutput}'"
+                                pwsh "& ./ii.ps1 -Test -SkipBuild -NoReport -Projects '${proj}' -OutputPath '${ctx.testOutput}'"
                             }
                         }
 
                         parallel(parallelStages)
                     } else {
                         echo 'Running integration tests...'
-                        pwsh "& ./ii.ps1 -Test -TestNoBuild -TestOutput '${ctx.testOutput}'"
-
-                        pwsh '& ./ii.ps1 -Test -ExitCode ' + params.ExitCodeForTests
-
-                        if (params.TestPwshThrow) {
-                            echo 'Running Pwsh throw test...'
-                            pwsh '& ./ii.ps1 -Throw'
-                        }
+                        pwsh "& ./ii.ps1 -Test -SkipBuild -NoReport -OutputPath '${ctx.testOutput}'"
                     }
                 }
             }
@@ -85,13 +79,13 @@ pipeline {
                 echo 'Collecting test results...'
 
                 mstest(
-                    testResultsFile: '*.trx',
+                    testResultsFile: "${ctx.testOutput}/*.trx",
                     failOnError: true
                 )
 
                 script {
                     String summaryRaw = pwsh(
-                        script: "& ./ii.ps1 -TestSummary -TestOutput './'",
+                        script: "& ./ii.ps1 -Summary -OutputPath '${ctx.testOutput}'",
                         returnStdout: true
                     ).trim()
 
@@ -131,7 +125,11 @@ pipeline {
                             jobName: ctx.jobName,
                             startTime: ctx.startTime,
                             color: '#f5ba45',
-                            message: 'Please review the test failures and take corrective action.'
+                            message: 'Please review the test failures and take corrective action.',
+                            totalTests: ctx.totalTests,
+                            passedTests: ctx.passedTests,
+                            failedTests: ctx.failedTests,
+                            skippedTests: ctx.skippedTests
                         ])
                     }
                 }
@@ -140,21 +138,28 @@ pipeline {
 
         stage('Publish') {
             when {
-                branch comparator: 'EQUALS', pattern: 'main'
+                anyOf {
+                    branch comparator: 'EQUALS', pattern: 'master'
+                    branch comparator: 'REGEXP', pattern: '(release|hotfix)/.*'
+                }
             }
             steps {
                 echo 'Fetching git tags...'
-                pwsh 'git fetch --tags'
+                pwsh 'git fetch --tags --force'
 
                 echo 'Publishing the CLI...'
-                pwsh '& ./ii.ps1 -Publish -NoPrompt'
+                pwsh '& ./ii.ps1 -Publish'
 
-                archiveArtifacts(
-                    artifacts: '**/file_v*.txt',
-                    fingerprint: true,
-                    onlyIfSuccessful: true,
-                    allowEmptyArchive: true
-                )
+                script {
+                    if (env.BRANCH_NAME == 'master') {
+                        archiveArtifacts(
+                            artifacts: '**/Delivery.Cli/bin/ifsinstall_v*.zip',
+                            fingerprint: true,
+                            onlyIfSuccessful: true,
+                            allowEmptyArchive: true
+                        )
+                    }
+                }
             }
         }
     }
@@ -173,14 +178,15 @@ pipeline {
                         result: 'TEST PASSED',
                         jobName: ctx.jobName,
                         startTime: ctx.startTime,
-                        color: '#8ac054',
-                        message: 'The issues causing previous test failures have been resolved. The build is now stable.'
+                        color: '#4caf50',
+                        message: 'The issues causing previous test failures have been resolved. The build is now stable.',
+                        totalTests: ctx.totalTests,
+                        passedTests: ctx.passedTests,
+                        failedTests: ctx.failedTests,
+                        skippedTests: ctx.skippedTests
                     ])
                 }
             }
-
-            echo '🧹 Cleaning up workspace...'
-            pwsh '& ./ii.ps1 -RemoveBin -RemoveTestUser -ResetConn'
         }
         failure {
             echo 'Pipeline failed ❌'
@@ -193,11 +199,25 @@ pipeline {
                     startTime: ctx.startTime,
                     color: '#e8563f',
                     message: 'Please investigate the failure as soon as possible to maintain the integrity of the build process.',
-                    showTests: false
+                    showTests: false,
+                    totalTests: ctx.totalTests,
+                    passedTests: ctx.passedTests,
+                    failedTests: ctx.failedTests,
+                    skippedTests: ctx.skippedTests
                 ])
             }
         }
         always {
+            echo '🧹 Cleaning up workspace...'
+
+            catchError(cleanupCatchOptions) {
+                pwsh '& ./ii.ps1 -RemoveTestUser'
+            }
+
+            catchError(cleanupCatchOptions) {
+                pwsh '& ./ii.ps1 -RemoveBin -ResetConn'
+            }
+
             echo 'Pipeline finished 🏁'
         }
     }
